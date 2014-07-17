@@ -9,11 +9,5 @@ module I3ipc
         f.call(socket)
       end
     end
-
-    def evloop
-      loop = GLib::MainLoop.new(nil, false)
-      on("ipc_shutdown") { loop.quit }
-      loop.run
-    end
   end
 end
