@@ -4,7 +4,7 @@ module I3ipc
   module Introspected
     def self.included(mod)
       name = mod.name.split(/::/).last
-      infos = get_method_introspections('i3ipc', name)
+      infos = get_method_infos('i3ipc', name)
       override_list_methods(mod, infos)
       override_closure_methods(mod, infos)
     end
@@ -12,7 +12,7 @@ module I3ipc
     private
 
     def self.list_method?(f)
-        [:gslist, :glist].include? f.return_type.tag
+      [:gslist, :glist].include? f.type.tag
     end
 
     def self.override_list_methods(mod, infos)
@@ -24,8 +24,8 @@ module I3ipc
     end
 
     def self.closure_method?(f)
-        args = f.args.map { |a| a.argument_type.interface }
-        args.last && (args.last.name == 'Closure')
+      args = f.args.map { |a| a.argument_type.interface }
+      args.last && (args.last.name == 'Closure')
     end
 
     def self.override_closure_methods(mod, infos)
@@ -43,11 +43,23 @@ module I3ipc
       end
     end
 
-    def self.get_method_introspections(namespace, name)
+    def self.get_method_infos(namespace, name)
       gir = GObjectIntrospection::IRepository.default
       gir.require(namespace, nil)
       members = gir.find_by_name(namespace, name)
-      members.get_methods
+
+      methods = members.get_methods.map do |m|
+        MethodInfo.new(m.name, m.return_type, m.args)
+      end
+
+      properties = members.properties.map do |p|
+        MethodInfo.new(p.getter_name, p.property_type, [])
+      end
+
+      methods + properties
+    end
+
+    class MethodInfo < Struct.new(:name, :type, :args)
     end
   end
 end
