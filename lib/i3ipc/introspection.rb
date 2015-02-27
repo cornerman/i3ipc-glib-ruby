@@ -4,46 +4,26 @@ module I3ipc
   module Introspected
     def self.included(mod)
       name = mod.name.split(/::/).last
-      infos = get_method_infos('i3ipc', name)
-      override_list_methods(mod, infos)
-      override_closure_methods(mod, infos)
+      infos = method_infos('i3ipc', name)
+      [ListWrapper.new, ClosureWrapper.new].each do |wrapper|
+        wrap_methods(mod, infos, wrapper);
+      end
     end
 
     private
 
-    def self.list_method?(f)
-      [:gslist, :glist].include? f.type.tag
-    end
+    def self.wrap_methods(mod, infos, wrapper)
+      methods = infos.select(&wrapper.method(:applicable?)).map do |info|
+        mod.setup_instance_method(info.name)
+        mod.instance_method(info.name)
+      end
 
-    def self.override_list_methods(mod, infos)
-      get_methods(mod, infos.select(&method(:list_method?))).each do |f|
-        mod.send(:define_method, f.name) do |*args|
-          (f.bind(self).call(*args) || []).to_a
-        end
+      methods.each do |f|
+        mod.send(:define_method, f.name, wrapper.wrap_method(f))
       end
     end
 
-    def self.closure_method?(f)
-      args = f.args.map { |a| a.argument_type.interface }
-      args.last && (args.last.name == 'Closure')
-    end
-
-    def self.override_closure_methods(mod, infos)
-      get_methods(mod, infos.select(&method(:closure_method?))).each do |f|
-        mod.send(:define_method, f.name) do |*args, &block|
-          f.bind(self).call(*args, GObject::RubyClosure.new(&block))
-        end
-      end
-    end
-
-    def self.get_methods(mod, infos)
-      infos.map do |f|
-        mod.setup_instance_method(f.name)
-        mod.instance_method(f.name)
-      end
-    end
-
-    def self.get_method_infos(namespace, name)
+    def self.method_infos(namespace, name)
       gir = GObjectIntrospection::IRepository.default
       gir.require(namespace, nil)
       members = gir.find_by_name(namespace, name)
@@ -60,6 +40,31 @@ module I3ipc
     end
 
     class MethodInfo < Struct.new(:name, :type, :args)
+    end
+
+    class ListWrapper
+      def applicable?(f)
+        [:gslist, :glist].include? f.type.tag
+      end
+
+      def wrap_method(f)
+        lambda do |*args|
+          (f.bind(self).call(*args) || []).to_a
+        end
+      end
+    end
+
+    class ClosureWrapper
+      def applicable?(f)
+        args = f.args.map { |a| a.argument_type.interface }
+        args.last && (args.last.name == 'Closure')
+      end
+
+      def wrap_method(f)
+        lambda do |*args, &block|
+          f.bind(self).call(*args, GObject::RubyClosure.new(&block))
+        end
+      end
     end
   end
 end
