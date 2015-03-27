@@ -6,14 +6,15 @@
 require 'optparse'
 require 'i3ipc-ruby'
 
-options = {}
+settings = {}
 OptionParser.new do |opts|
   opts.banner = "Usage: #{$PROGRAM_NAME} options"
-  opts.on('-w', '--workspace', true, 'set workspace') do |ws|
-    options[:workspace] = ws
-  end
-  opts.on('-c', '--command', true, 'set command') do |cmd|
-    options[:command] = cmd
+  opts.on('-s', '--set', true, 'set workspace::command action') do |setting|
+    split = setting.split(/::/)
+    raise 'please provide workspace::command pairs with --set' if (split.size != 2)
+    ws = split[0]
+    cmd = split[1]
+    settings[ws] = cmd
   end
   opts.on_tail('-h', '--help', 'show this message') do
     puts opts
@@ -21,14 +22,11 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-fail OptionParser::MissingArgument unless options[:workspace]
-fail OptionParser::MissingArgument unless options[:command]
-
 i3 = I3ipc::Connection.new
 
 i3.on('workspace::focus') do |i3, ev|
-  if ev.current.name == options[:workspace] && ev.current.nodes.empty?
-    i3.command "exec #{options[:command]}"
+  if settings[ev.current.name] && ev.current.nodes.empty?
+    i3.command "exec #{settings[ev.current.name]}"
   end
 end
 
