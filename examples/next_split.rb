@@ -5,7 +5,7 @@
 #
 
 require 'optparse'
-require 'i3ipc-ruby'
+require 'i3ipc-glib-ruby'
 
 mode = 'horizontal'
 OptionParser.new do |opts|

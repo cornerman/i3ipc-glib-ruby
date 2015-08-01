@@ -5,7 +5,7 @@
 # Splits the current workspace into two columns and can move the content of
 # another workspace (or more) into the right column. The name of each moved
 # workspace is stored as a mark, which is why the original workspaces can be
-# restored.
+# restored. It is possible to nest split workspaces.
 #
 # Example:
 # -Open a window on workspace 1 and 2, focus workspace 1. Then you can view both
@@ -17,7 +17,7 @@
 #
 
 require 'optparse'
-require 'i3ipc-ruby'
+require 'i3ipc-glib-ruby'
 
 options = {}
 OptionParser.new do |opts|

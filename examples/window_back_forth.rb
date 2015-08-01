@@ -4,7 +4,7 @@
 #
 
 require 'socket'
-require 'i3ipc'
+require 'i3ipc-glib-ruby'
 
 Process.daemon true
 

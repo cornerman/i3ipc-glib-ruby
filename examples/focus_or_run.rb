@@ -4,7 +4,7 @@
 #
 
 require 'optparse'
-require 'i3ipc-ruby'
+require 'i3ipc-glib-ruby'
 
 options = {}
 OptionParser.new do |opts|

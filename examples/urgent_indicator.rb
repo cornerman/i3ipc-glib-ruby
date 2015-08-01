@@ -3,7 +3,7 @@
 # Activate Scroll-Lock LED whenever there is an urgent window
 #
 
-require 'i3ipc-ruby'
+require 'i3ipc-glib-ruby'
 
 i3 = I3ipc::Connection.new
 
